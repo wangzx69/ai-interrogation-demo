@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>雾港疑案 · AI 审讯室 v4</title>
+<style>
+  :root{
+    --bg:#0b0f16; --panel:#131a26; --panel2:#1a2333; --line:#2a3547;
+    --text:#e8edf5; --muted:#93a1b8; --gold:#d6a84f; --red:#c8553d; --green:#4f9d7a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  [hidden]{display:none !important;}
+  body{background:radial-gradient(1200px 600px at 50% -10%, #1b2638 0%, var(--bg) 60%); color:var(--text); font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif; min-height:100vh;}
+  .wrap{max-width:1180px; margin:0 auto; padding:22px 18px 40px;}
+  header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;}
+  .brand{display:flex; align-items:baseline; gap:12px;}
+  .brand h1{font-size:22px; letter-spacing:2px; color:var(--gold); font-family:Georgia,"Songti SC",serif;}
+  .brand span{font-size:12px; color:var(--muted); letter-spacing:1px;}
+  .badge{font-size:11px; color:var(--muted); border:1px solid var(--line); padding:4px 8px; border-radius:20px;}
+  button{font-family:inherit; cursor:pointer; border:1px solid var(--line); background:var(--panel2); color:var(--text); padding:9px 14px; border-radius:8px; font-size:13px; transition:.15s;}
+  button:hover{border-color:var(--gold); color:var(--gold);}
+  button.primary{background:var(--gold); color:#16130c; border-color:var(--gold); font-weight:700;}
+  button.primary:hover{filter:brightness(1.08); color:#16130c;}
+  button:disabled{opacity:.35; cursor:not-allowed; border-color:var(--line); color:var(--muted);}
+  .card{background:linear-gradient(180deg,var(--panel),#0f1621); border:1px solid var(--line); border-radius:14px; padding:18px;}
+  .start{max-width:860px; margin:3vh auto 0;}
+  .start h2{font-family:Georgia,"Songti SC",serif; font-size:30px; letter-spacing:4px; color:var(--gold); text-align:center;}
+  .start .sub{text-align:center; color:var(--muted); font-size:13px; margin:8px 0 18px; letter-spacing:1px;}
+  .brief{line-height:1.9; font-size:14px; color:#cdd6e4;}
+  .cases{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:16px 0;}
+  .sc{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:12px;}
+  .sc b{color:var(--gold); font-size:14px;}
+  .sc p{color:var(--muted); font-size:12px; margin-top:5px; line-height:1.6;}
+  .start .actions{display:flex; gap:10px; justify-content:center; margin-top:8px; flex-wrap:wrap;}
+  .hint{text-align:center; color:var(--muted); font-size:11px; margin-top:12px;}
+  .game{display:grid; grid-template-columns:330px 1fr; gap:14px; align-items:start;}
+  .side{display:flex; flex-direction:column; gap:12px;}
+  .sec-title{font-size:12px; color:var(--gold); letter-spacing:2px; margin-bottom:8px;}
+  .stat{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:6px;}
+  .stat b{color:var(--text);}
+  .clue{background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px; margin-bottom:8px;}
+  .clue b{font-size:13px;}
+  .clue p{font-size:11.5px; color:var(--muted); line-height:1.6; margin:5px 0 8px;}
+  .clue button{width:100%; padding:6px; font-size:12px;}
+  .clue button.ev{margin-top:6px; border-color:#4a3c1f; color:var(--gold); font-size:11.5px;}
+  .clue.found{border-color:var(--green);}
+  .clue.found p{color:#cfe6da;}
+  .bar{height:7px; background:#0e141e; border-radius:4px; overflow:hidden; margin:4px 0 9px;}
+  .bar i{display:block; height:100%; transition:width .2s;}
+  .bar.p i{background:var(--red);}
+  .bar.t i{background:var(--green);}
+  .meter-label{display:flex; justify-content:space-between; font-size:11px; color:var(--muted);}
+  .chatbox{display:flex; flex-direction:column; height:660px;}
+  .tabs{display:flex; gap:6px; border-bottom:1px solid var(--line); padding-bottom:10px; margin-bottom:10px;}
+  .tab{padding:7px 12px; border-radius:8px; font-size:13px; background:transparent; border:1px solid transparent; color:var(--muted);}
+  .tab.active{background:var(--panel2); border-color:var(--line); color:var(--gold);}
+  .log{flex:1; overflow-y:auto; padding:6px 4px; display:flex; flex-direction:column; gap:10px;}
+  .msg{max-width:86%; padding:10px 12px; border-radius:10px; font-size:13.5px; line-height:1.75; white-space:pre-wrap;}
+  .msg.sys{align-self:center; max-width:96%; color:var(--muted); font-size:11.5px; text-align:center; background:transparent; border:1px dashed var(--line);}
+  .msg.npc{align-self:flex-start; background:var(--panel2); border:1px solid var(--line);}
+  .msg.me{align-self:flex-end; background:#2b2416; border:1px solid #4a3c1f;}
+  .msg .who{display:block; font-size:11px; color:var(--gold); margin-bottom:4px;}
+  .tonerow{display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;}
+  .tone{padding:5px 10px; border-radius:20px; font-size:11.5px; background:transparent; border:1px solid var(--line); color:var(--muted);}
+  .tone.active{border-color:var(--gold); color:var(--gold); background:#2b2416;}
+  .input{display:flex; gap:8px; margin-top:8px;}
+  .input input{flex:1; background:#0e141e; border:1px solid var(--line); color:var(--text); border-radius:8px; padding:11px 12px; font-size:13.5px; font-family:inherit;}
+  .input input:focus{outline:none; border-color:var(--gold);}
+  .typing{color:var(--muted); font-size:12px; padding:4px 2px;}
+  .end{max-width:760px; margin:5vh auto 0; text-align:center;}
+  .end h2{font-family:Georgia,"Songti SC",serif; font-size:28px; color:var(--gold); letter-spacing:3px;}
+  .end .result{font-size:15px; line-height:2; margin:16px 0; color:#d8e0ec; text-align:left;}
+  .end .actions{display:flex; gap:10px; justify-content:center; margin-top:14px;}
+  dialog{background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:12px; padding:0; width:min(560px,92vw); position:fixed; inset:0; margin:auto; height:max-content; max-height:92vh; overflow:auto;}
+  dialog::backdrop{background:rgba(0,0,0,.65);}
+  .dlg{padding:18px;}
+  .dlg h3{color:var(--gold); font-size:16px; margin-bottom:6px;}
+  .dlg p{font-size:12px; color:var(--muted); line-height:1.7; margin-bottom:12px;}
+  .dlg label{display:block; font-size:12px; color:var(--muted); margin:10px 0 4px;}
+  .dlg input[type=text],.dlg input[type=password]{width:100%; background:#0e141e; border:1px solid var(--line); color:var(--text); border-radius:8px; padding:9px 10px; font-family:inherit; font-size:13px;}
+  .dlg .row{display:flex; gap:10px; justify-content:flex-end; margin-top:16px;}
+  .pick{display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;}
+  .pick label{display:flex; align-items:center; gap:6px; margin:0; padding:7px 10px; border:1px solid var(--line); border-radius:8px; color:var(--text); font-size:12.5px; cursor:pointer;}
+  .pick label:has(input:checked){border-color:var(--gold); color:var(--gold);}
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%); background:#2a2113; border:1px solid var(--gold); color:var(--gold); padding:9px 16px; border-radius:20px; font-size:12px; opacity:0; pointer-events:none; transition:.2s;}
+  .toast.show{opacity:1;}
+  @media(max-width:820px){.game{grid-template-columns:1fr;} .chatbox{height:580px;} .cases{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><h1>雾港疑案</h1><span>AI 审讯室 · v4 · 9 种「角色 × 凶手」组合</span></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="badge" id="modeBadge">离线演示模式</span>
+      <button id="btnSettings">AI 设置</button>
+    </div>
+  </header>
+
+  <section id="start" class="start">
+    <h2>谁在说谎？</h2>
+    <div class="sub">3 个案件 · 每局随机凶手 · 10 次提问 · 3 处现场 · 三种语气</div>
+    <div class="card">
+      <p class="brief" id="brief"></p>
+      <div class="cases" id="caseCards"></div>
+      <div class="actions">
+        <button class="primary" id="btnStart">随机开局</button>
+        <button id="btnSettings2">接入 AI（可选）</button>
+      </div>
+      <p class="hint">离线模式为脚本对话，可完整体验；接入大模型后，嫌疑人由 AI 实时扮演。</p>
+    </div>
+  </section>
+
+  <section id="game" class="game" hidden>
+    <aside class="side">
+      <div class="card">
+        <div class="sec-title" id="caseTitle">案件</div>
+        <div class="stat"><span>剩余提问</span><b id="attempts">10</b></div>
+        <div class="stat"><span>已获线索</span><b id="clueCount">0 / 3</b></div>
+        <div class="stat"><span>当前对象</span><b id="curName">—</b></div>
+      </div>
+      <div class="card">
+        <div class="sec-title">当前对象状态</div>
+        <div class="meter-label"><span>压力</span><span id="pVal">30</span></div>
+        <div class="bar p"><i id="pBar" style="width:30%"></i></div>
+        <div class="meter-label"><span>信任</span><span id="tVal">30</span></div>
+        <div class="bar t"><i id="tBar" style="width:30%"></i></div>
+        <p style="font-size:11px;color:var(--muted);line-height:1.6;margin-top:2px">压力 &gt;70 容易说漏嘴；信任 &gt;70 会主动给信息。</p>
+        <button id="btnHint" style="width:100%;margin-top:8px;font-size:12px">给个提示（免费一次）</button>
+      </div>
+      <div class="card">
+        <div class="sec-title">现场搜查（各耗 1 次提问）</div>
+        <div id="clueList"></div>
+      </div>
+      <div class="card">
+        <div class="sec-title">结案</div>
+        <p style="font-size:11.5px;color:var(--muted);line-height:1.6;margin-bottom:8px">指认凶手，并选 2 条关键证据。只指认对、证据不够，也算失败。</p>
+        <button id="btnAccuse" style="width:100%">指认凶手</button>
+      </div>
+    </aside>
+    <div class="card chatbox">
+      <div class="tabs" id="tabs"></div>
+      <div class="log" id="log"></div>
+      <div class="tonerow" id="tonerow">
+        <button class="tone" data-tone="empathy">共情 +信任</button>
+        <button class="tone" data-tone="pressure">施压 +压力</button>
+        <button class="tone active" data-tone="probe">套话 中性</button>
+      </div>
+      <div class="input">
+        <input id="ask" placeholder="输入你的问题，例如：你昨晚几点离开？" autocomplete="off">
+        <button class="primary" id="btnSend">提问</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="end" class="end" hidden>
+    <h2 id="endTitle"></h2>
+    <div class="card"><div class="result" id="endText"></div></div>
+    <div class="actions">
+      <button class="primary" id="btnReplay">再来一局（换案件/换凶手）</button>
+      <button id="btnHome">回到首页</button>
+    </div>
+  </section>
+</div>
+
+<dialog id="dlg">
+  <div class="dlg">
+    <h3>接入 AI（可选）</h3>
+    <p>填入任意 OpenAI 兼容接口即可让嫌疑人由大模型实时扮演。Key 只保存在本页 sessionStorage，关闭页面即清除。若接口不支持浏览器跨域，请用本地代理；离线模式不受影响。</p>
+    <label>接口地址（Chat Completions）</label>
+    <input id="apiUrl" type="text" placeholder="https://api.deepseek.com/v1/chat/completions">
+    <label>API Key</label>
+    <input id="apiKey" type="password" placeholder="sk-...">
+    <label>模型</label>
+    <input id="apiModel" type="text" placeholder="deepseek-chat / gpt-4o-mini">
+    <div class="row"><button id="btnClearApi">清除</button><button id="btnSaveApi" class="primary">保存并启用</button></div>
+  </div>
+</dialog>
+
+<dialog id="accuseDlg">
+  <div class="dlg">
+    <h3>指认凶手</h3>
+    <p>选择凶手，并勾选 2 条关键证据。只指认对、证据不够，也算失败。</p>
+    <label>凶手</label>
+    <div class="pick" id="accuseSuspects"></div>
+    <label>关键证据（选 2 条）</label>
+    <div class="pick" id="accuseClues"></div>
+    <div class="row"><button id="btnCancelAccuse">取消</button><button class="primary" id="btnConfirmAccuse">确认指认</button></div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================== 案件库（3 个案件，每个 3 名嫌疑人） ===================== */
+const CASES = [
+  {
+    id:"museum", title:"雾港疑案", place:"雾港美术馆", victim:"馆长沈鸿",
+    brief:"暴雨夜，私人美术馆馆长沈鸿死在二楼办公室，后脑遭钝器击打。三名嫌疑人：助理林晚、画家周野、保安陈叔。你有 10 次提问、3 处现场，找出凶手并指出 2 条关键证据。",
+    clues:[
+      {id:"office", name:"二楼办公室", pointsTo:"lin", text:"碎玻璃杯、水渍；座机 21:15 打给财务，通话 2 分钟；账本少了两页。"},
+      {id:"gallery", name:"一楼展厅", pointsTo:"zhou", text:"周野的画被取下，画框背面有 120 万借条，边角有暗红色痕迹。"},
+      {id:"backdoor", name:"后门与监控", pointsTo:"chen", text:"门锁无撬痕；21:05 陈叔刷卡放人，21:30 同一人离开；陈叔袖口有污渍。"}
+    ],
+    roles:[
+      {id:"lin", name:"林晚", role:"馆长助理", persona:"冷静、克制、好胜，说话简短，习惯反问。",
+       motive:"挪用馆款被沈鸿发现，逼她当天还钱", redHerring:"当晚回办公室拿手机，和沈鸿吵了几句",
+       lie:"说 21:00 已离开",
+       topics:[
+         {keys:["几点","离开","时间","21"], replies:["九点前就走了。","我走的时候，馆里已经没人了。","你问这个，是怀疑我吗？"]},
+         {keys:["馆长","关系","吵架"], replies:["他要求高，但对我一直不错。","工作上会有分歧，但没到吵架的地步。"]},
+         {keys:["钱","账","财务"], replies:["账目是财务在管。","我不碰钱。"]}
+       ],
+       defaults:["我不记得了。","你问别人吧。","你是在套我话吗？"]},
+      {id:"zhou", name:"周野", role:"画家", persona:"敏感、骄傲、嘴硬，提到画和钱会激动。",
+       motive:"沈鸿扣画压价，还当众羞辱他", redHerring:"从后门进来，想偷回自己的画",
+       lie:"说从正门离开",
+       topics:[
+         {keys:["几点","离开","时间","后门"], replies:["我从正门走的。","雨那么大，谁记得几点。","后门？我抽烟时去过。"]},
+         {keys:["画","作品","展厅"], replies:["那幅画是我的。他凭什么扣着？","我只是想拿回自己的东西。"]},
+         {keys:["钱","债","欠"], replies:["画画的人欠点钱，很正常。","他压我的价，一转手就翻倍。"]}
+       ],
+       defaults:["我只是个画画的。","不知道。","你们有证据吗？"]},
+      {id:"chen", name:"陈叔", role:"保安", persona:"老实、紧张、说话绕，提到儿子和钥匙会结巴。",
+       motive:"沈鸿要辞退他，还扣了最后一个月工资", redHerring:"收了周野 5000 块，放他从后门进来",
+       lie:"说后门一直锁着",
+       topics:[
+         {keys:["后门","门","锁","钥匙"], replies:["后门一直锁着。","雨这么大，没人走后面。","钥匙……就我有。"]},
+         {keys:["巡逻","监控","几点","时间"], replies:["我十点巡的楼。","晚上就我一个人值班。"]},
+         {keys:["儿子","钱","工资"], replies:["我儿子……在医院。","你别问了，行吗。"]}
+       ],
+       defaults:["我什么都不知道。","我就是个看门的。","年纪大了，记不清。"]}
+    ]
+  },
+  {
+    id:"inn", title:"雨夜民宿", place:"山脚民宿", victim:"老板周启明",
+    brief:"台风夜，山脚民宿老板周启明死在账房，头部遭重击。三名嫌疑人：合伙人许岚、前台阿哲、厨师胖姐。你有 10 次提问、3 处现场，找出凶手并指出 2 条关键证据。",
+    clues:[
+      {id:"ledger", name:"账房账本", pointsTo:"xu", text:"账本被撕掉两页，夹层里有许岚的指纹；最后一页写着“撤资”。"},
+      {id:"desk", name:"前台登记与监控", pointsTo:"zhe", text:"登记表被改过；监控 22:10 拍到阿哲离开前台 12 分钟。"},
+      {id:"kitchen", name:"厨房与后门", pointsTo:"pang", text:"后门没锁；案板边有血迹；监控 22:20 拍到胖姐从后门回来。"}
+    ],
+    roles:[
+      {id:"xu", name:"许岚", role:"合伙人", persona:"干练、强势、语速快，提到钱会警觉。",
+       motive:"周启明要撤资，把她踢出民宿", redHerring:"当晚去账房翻账本，想抓他把柄",
+       lie:"说 22:00 已回房间",
+       topics:[
+         {keys:["几点","离开","时间","22"], replies:["十点前就回房了。","我何必骗你。"]},
+         {keys:["周启明","关系","撤资"], replies:["他想撤资，我们在谈。","生意上的事，吵两句很正常。"]},
+         {keys:["钱","账","账本"], replies:["账一直是他在管。","我不碰账本。"]}
+       ],
+       defaults:["我不清楚。","你问阿哲去。","这和我没关系。"]},
+      {id:"zhe", name:"阿哲", role:"前台", persona:"年轻、紧张、爱绕，提到工作会抱怨。",
+       motive:"周启明以偷钱为由辞退他，还扣工资", redHerring:"私自给朋友开了一间房",
+       lie:"说一直守在前台",
+       topics:[
+         {keys:["几点","离开","时间","前台"], replies:["我一直在前台。","就离开了一小会儿。"]},
+         {keys:["工作","辞退","工资"], replies:["他凭什么说我偷钱？","工资还扣着没给。"]},
+         {keys:["监控","登记"], replies:["登记表……我改过一个字。","监控坏了几天了。"]}
+       ],
+       defaults:["我不知道。","别问我。","我只是个前台。"]},
+      {id:"pang", name:"胖姐", role:"厨师", persona:"嗓门大、直爽、被冤枉会急。",
+       motive:"周启明要把厨房外包，让她走", redHerring:"从后门带了一袋食材出去",
+       lie:"说 21:30 就下班了",
+       topics:[
+         {keys:["几点","离开","时间","后门"], replies:["九点半就下班了。","我从后门走的，怎么了？"]},
+         {keys:["厨房","外包","工作"], replies:["他要把厨房包出去。","我在这干了六年。"]},
+         {keys:["食材","袋子"], replies:["那是我的东西。","你别血口喷人。"]}
+       ],
+       defaults:["我不知道。","我忙着做饭。","你们查清楚再说。"]}
+    ]
+  },
+  {
+    id:"ship", title:"远洋货轮", place:"远洋货轮", victim:"船长陈海",
+    brief:"返航途中，船长陈海死在驾驶台，后脑遭重击。三名嫌疑人：大副方远、轮机长老周、水手小马。你有 10 次提问、3 处现场，找出凶手并指出 2 条关键证据。",
+    clues:[
+      {id:"log", name:"航海日志", pointsTo:"fang", text:"日志被撕掉一页；桌角有血迹；方远的手套少了一只。"},
+      {id:"engine", name:"机舱监控", pointsTo:"zhou", text:"监控 23:10–23:40 有缺口；老周的工具箱里有带血的扳手。"},
+      {id:"deck", name:"甲板与救生衣", pointsTo:"ma", text:"甲板栏杆有摩擦痕迹；小马的救生衣少了一件；23:20 他在甲板。"}
+    ],
+    roles:[
+      {id:"fang", name:"方远", role:"大副", persona:"沉稳、强硬、说话有分寸，提到货会回避。",
+       motive:"船长发现他私带货物，要上报公司", redHerring:"私自带了两箱货，想靠岸脱手",
+       lie:"说一直在驾驶台",
+       topics:[
+         {keys:["几点","离开","时间","驾驶台"], replies:["我一直在驾驶台。","风浪大，谁记得几点。"]},
+         {keys:["货","私带","报关"], replies:["货是公司的。","你别乱说。"]},
+         {keys:["船长","关系","上报"], replies:["他要求严。","我们有过争执。"]}
+       ],
+       defaults:["不清楚。","你问老周。","海上事，别乱猜。"]},
+      {id:"zhou", name:"老周", role:"轮机长", persona:"急躁、疲惫、说话冲，提到机器会激动。",
+       motive:"船长把主机故障责任推给他，要停职", redHerring:"隐瞒了主机故障，没上报",
+       lie:"说在机舱值班",
+       topics:[
+         {keys:["几点","离开","时间","机舱"], replies:["我在机舱。","机器一直响，我走不开。"]},
+         {keys:["机器","故障","停职"], replies:["主机是老毛病。","他要把责任推给我。"]},
+         {keys:["扳手","工具"], replies:["工具箱是我的。","扳手……我记不清。"]}
+       ],
+       defaults:["我不知道。","别烦我。","机器比人诚实。"]},
+      {id:"ma", name:"小马", role:"水手", persona:"年轻、冲动、委屈，提到工资会激动。",
+       motive:"船长克扣工资，还当众打骂他", redHerring:"偷了一件救生衣，想靠岸下船",
+       lie:"说在甲板抽烟",
+       topics:[
+         {keys:["几点","离开","时间","甲板"], replies:["我在甲板抽烟。","风太大，我站了一会儿。"]},
+         {keys:["工资","打骂","船长"], replies:["他扣了我两个月工资。","他凭什么打我？"]},
+         {keys:["救生衣","下船"], replies:["救生衣……我拿了一件。","我想下船。"]}
+       ],
+       defaults:["我不知道。","我只是个水手。","你们不会信的。"]}
+    ]
+  }
+];
+
+/* ===================== V4：9 种「角色 × 凶手」专属内容 ===================== */
+const VARIANTS = {
+  museum: {
+    lin: {
+      confession:"……21:15 我回了办公室。他拿账本逼我，说今天不还钱就报警。我求他再给一个月，他不肯，还说要告诉我妈。我脑子一热，抓起桌上的镇纸……等我反应过来，他已经倒了。",
+      keyReply:"……那通电话是我打的。我想问财务能不能先挪一笔。杯子是我碰倒的。",
+      volunteer:"你去查那通 21:15 的电话，是我打的。",
+      ending:"林晚挪用馆款填赌债，被沈鸿发现。她回办公室求情被拒，争吵中抓起镇纸砸向沈鸿。21:15 打给财务的电话、碎玻璃、她袖口的划痕，对上了。",
+      witnesses:{
+        zhou:"21:20 左右，我看见林晚从二楼下来，脸色很白，手在抖。",
+        chen:"我巡楼时听见办公室有人吵，一个是馆长，一个是林助理。"
+      }
+    },
+    zhou: {
+      confession:"……我上去是要拿回我的画。他说画早抵给债主了，还骂我‘一辈子就是个穷画画的’。我推了他一把，他撞到桌角……我没想杀他。",
+      keyReply:"画框上的血是我的。我搬画的时候手被划了。借条是他逼我签的。",
+      volunteer:"画框上有我的血。你查了就知道。",
+      ending:"周野被沈鸿扣画、压价、当众羞辱。当晚他从后门进来想偷回画，在办公室争执中推倒沈鸿，后脑撞上桌角。画框上的血迹和借条，对上了。",
+      witnesses:{
+        lin:"我走的时候，周野还在展厅。他喝了酒。",
+        chen:"周画家从后门进来，雨衣上都是水，手里拎着画。"
+      }
+    },
+    chen: {
+      confession:"……他说要辞我，还扣我最后一个月工资。我求他，他说‘看门的到处都有’。我推了他一下，他撞到柜子……我不是故意的。",
+      keyReply:"后门是我开的。周画家给了我五千块，我儿子在医院。但我上去的时候，是去找馆长求情。",
+      volunteer:"后门的刷卡记录，你去调。",
+      ending:"陈叔被沈鸿辞退、扣工资。他上办公室求情被羞辱，争执中推倒沈鸿。后门监控、他袖口的污渍、5000 块的转账记录，对上了。",
+      witnesses:{
+        lin:"陈叔那晚一直在楼下，后来上去过一次。",
+        zhou:"后门是陈叔开的。他收了我的钱，但他说馆长还活着。"
+      }
+    }
+  },
+  inn: {
+    xu: {
+      confession:"……他说撤资就撤资，还要把我从合伙人名单里划掉。我跟他吵，他拍桌子说‘这店跟你没关系了’。我拿起账本砸他……",
+      keyReply:"账本是我撕的。我想拿走我投钱的记录。指纹？我天天翻账。",
+      volunteer:"账本上的指纹，你去验。",
+      ending:"许岚与周启明因撤资决裂。她当晚去账房谈判被拒，用账本砸向周启明。被撕的账页、她的指纹、监控时间，对上了。",
+      witnesses:{
+        zhe:"22:05 许姐从账房出来，手上拿着账本，很急。",
+        pang:"我听见账房有人吵，女的声音，像许姐。"
+      }
+    },
+    zhe: {
+      confession:"……他说我偷钱，要报警，还要扣我全部工资。我跪下来求他，他踢了我一脚。我抓起前台的花瓶……",
+      keyReply:"登记表是我改的。我朋友来住，我没登记。监控……我离开前台 12 分钟。",
+      volunteer:"前台监控，你去看 22:10。",
+      ending:"阿哲被周启明以偷钱为由辞退、扣工资。他求情被羞辱，用前台花瓶砸向周启明。被改的登记表、监控缺口，对上了。",
+      witnesses:{
+        xu:"22:10 左右，阿哲不在前台，我喊了几声没人。",
+        pang:"阿哲那晚眼睛红红的，说老板要赶他走。"
+      }
+    },
+    pang: {
+      confession:"……他说厨房要外包，让我月底走。我在这干了六年，说赶就赶。我跟他吵，他推我，我顺手拿起案板边的刀……",
+      keyReply:"后门的血是我的。我杀鱼的时候划了手。那袋食材是我拿的，我认。",
+      volunteer:"厨房后门的血，是我的。",
+      ending:"胖姐被周启明通知月底走人。她当晚去厨房理论被推搡，拿起案板边的刀。后门血迹、监控时间、她的手套，对上了。",
+      witnesses:{
+        xu:"22:20 胖姐从后门回来，神色不对。",
+        zhe:"厨房那晚有吵架声，胖姐嗓门很大。"
+      }
+    }
+  },
+  ship: {
+    fang: {
+      confession:"……他发现我私带的两箱货，说要上报公司，让我一辈子别想跑船。我求他，他说‘你早干嘛去了’。我抓起桌上的扳手……",
+      keyReply:"日志是我撕的。那页记着我私带货物的时间。手套……我杀鱼的时候弄丢了。",
+      volunteer:"航海日志被撕的那页，是我撕的。",
+      ending:"方远私带货物被船长发现，面临上报。他在驾驶台争执中抓起扳手。被撕的航海日志、带血的手套，对上了。",
+      witnesses:{
+        zhou:"23:15 方大副从驾驶台下来，脸色不对，手套少了一只。",
+        ma:"我听见驾驶台有人吵，船长的声音很大。"
+      }
+    },
+    zhou: {
+      confession:"……主机故障他全推给我，说要停我的职。我跟他吵，他说‘你下去吧，别干了’。我拿起扳手……",
+      keyReply:"监控缺口是我弄的。我在机舱修机器，不想让人看见。扳手是我的，上面的血是机油……不，是他的。",
+      volunteer:"机舱监控的缺口，是我弄的。",
+      ending:"轮机长周被船长追责主机故障、面临停职。他在机舱争执中用扳手袭击船长。监控缺口、带血的扳手，对上了。",
+      witnesses:{
+        fang:"23:20 老周从机舱上来，手上有机油，也有血。",
+        ma:"机舱那晚一直响，老周不让人下去。"
+      }
+    },
+    ma: {
+      confession:"……他扣我两个月工资，还当着全船的人打我。我找他理论，他让我滚。我抓起甲板上的铁钩……",
+      keyReply:"救生衣是我拿的。我想靠岸下船。栏杆上的痕迹……是我翻过去的时候留下的。",
+      volunteer:"甲板栏杆上的痕迹，是我的。",
+      ending:"水手小马被船长克扣工资、当众打骂。他在甲板争执中抓起铁钩。救生衣、栏杆痕迹、监控时间，对上了。",
+      witnesses:{
+        fang:"23:20 小马在甲板，风很大，他没穿救生衣。",
+        zhou:"小马那晚一直在说‘我不干了’，情绪不对。"
+      }
+    }
+  }
+};
+
+const ROLE_EXTRA = {
+  museum: {
+    lin:{ innocentSlip:"……我承认，我挪了馆款。但我去办公室只是求他宽限，我走的时候他还坐着。", ownClueReply:"21:15 我确实在办公室，但只是拿手机、吵了几句。我走的时候他还好好的。" },
+    zhou:{ innocentSlip:"……我承认，我是去偷画的。但我上去的时候，他已经趴在地上了。", ownClueReply:"画框上的血是我的，搬画划的。借条是他逼我签的。" },
+    chen:{ innocentSlip:"……我承认，我收了周野的钱，放他从后门进来。但我真没杀他。", ownClueReply:"后门是我开的，我放了周画家进来。但我走的时候，馆长还活着。" }
+  },
+  inn: {
+    xu:{ innocentSlip:"……我承认，我翻了账本，想抓他把柄。但我没杀他。", ownClueReply:"账本我翻过，我想拿回我投钱的记录。但我没杀他。" },
+    zhe:{ innocentSlip:"……我承认，我改了登记表，给朋友开了房。但我没杀他。", ownClueReply:"登记表我改了，我朋友来住。监控那 12 分钟，我去抽烟了。" },
+    pang:{ innocentSlip:"……我承认，我从后门带了一袋食材出去。但我没杀他。", ownClueReply:"后门的血是我杀鱼划的。食材是我拿的。但我没杀他。" }
+  },
+  ship: {
+    fang:{ innocentSlip:"……我承认，我私带了两箱货。但我没杀他。", ownClueReply:"日志我撕了一页，记的是我私带货物。但我没杀他。" },
+    zhou:{ innocentSlip:"……我承认，我瞒了主机故障。但我没杀他。", ownClueReply:"监控缺口是我弄的，我在修机器。扳手上的血是机油。" },
+    ma:{ innocentSlip:"……我承认，我拿了救生衣想下船。但我没杀他。", ownClueReply:"救生衣是我拿的，我想下船。但我没杀他。" }
+  }
+};
+
+/* ===================== 状态 ===================== */
+let C = null;          // 本局案件（运行时，含随机凶手）
+let S = null;          // 玩家状态
+let API = {url:"", key:"", model:""};
+try{ API = JSON.parse(sessionStorage.getItem("ai_interro_api")||"null") || API; }catch(e){}
+
+const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => { const n=document.createElement(tag); if(cls)n.className=cls; if(text!=null)n.textContent=text; return n; };
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+const TONE = {empathy:"共情", pressure:"施压", probe:"套话"};
+
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2200); }
+
+/* ===================== 构建本局：随机案件 + 随机凶手 ===================== */
+function buildCase(base){
+  const c = JSON.parse(JSON.stringify(base));
+  const killer = c.roles[Math.floor(Math.random()*c.roles.length)];
+  c.killer = killer.id;
+  const keyClue = c.clues.find(x=>x.pointsTo===killer.id);
+  c.keyClue = keyClue.id;
+  c.keyClueName = keyClue.name;
+  const V = VARIANTS[c.id][killer.id];
+  const extra = ROLE_EXTRA[c.id];
+  c.ending = V.ending;
+  c.roles.forEach(r=>{
+    r.guilty = (r.id===killer.id);
+    r.secret = r.guilty ? r.motive : r.redHerring;
+    r.clueReply = {};
+    c.clues.forEach(cl=>{ r.clueReply[cl.id] = "这和我没关系。"; });
+    if(r.guilty){
+      r.slip = V.confession;
+      r.volunteer = V.volunteer;
+      r.clueReply[keyClue.id] = V.keyReply;
+    }else{
+      r.slip = extra[r.id].innocentSlip;
+      r.volunteer = V.witnesses[r.id] || ("我看见"+killer.name+"从现场离开。");
+      const own = c.clues.find(cl=>cl.pointsTo===r.id);
+      if(own) r.clueReply[own.id] = extra[r.id].ownClueReply;
+      r.clueReply[keyClue.id] = "那不是我。你们可以查。";
+    }
+    r.system = "你是"+r.name+"，"+r.role+"。本案你是"+(r.guilty?"凶手":"无辜者")+"。你的秘密："+r.secret+"。你的谎言："+r.lie+"。规则：1) "+(r.guilty?"绝不主动承认杀人，被证据逼问才部分承认":"绝不承认杀人，可以承认你的秘密")+"；2) 被问到时间，先按谎言回答；3) 回答不超过 80 字，保持人设；4) 不讨论无关话题。";
+  });
+  return c;
+}
+
+/* ===================== 渲染 ===================== */
+function renderStart(){
+  $("brief").textContent = "3 个案件，每局随机抽一个；每个案件里，3 名嫌疑人中随机一人是凶手。你只有 10 次提问、3 处现场，指认时还要选 2 条关键证据。";
+  const box=$("caseCards"); box.innerHTML="";
+  CASES.forEach(c=>{
+    const d=el("div","sc");
+    d.appendChild(el("b",null,c.title));
+    d.appendChild(el("p",null,c.place+" · 死者："+c.victim));
+    box.appendChild(d);
+  });
+}
+
+function startGame(){
+  C = buildCase(pick(CASES));
+  S = {
+    attempts:10, current:C.roles[0].id, discovered:[], chats:{}, over:false,
+    tone:"probe",
+    pressure:{}, trust:{}, presented:{}, slipped:{}, volunteered:{}, hintUsed:false
+  };
+  C.roles.forEach(r=>{
+    S.chats[r.id]=[]; S.pressure[r.id]=30; S.trust[r.id]=30;
+    S.presented[r.id]=[]; S.slipped[r.id]=false; S.volunteered[r.id]=false;
+  });
+  $("start").hidden=true; $("end").hidden=true; $("game").hidden=false;
+  $("caseTitle").textContent=C.title;
+  renderTabs(); renderClues(); renderChat(); renderTone(); updateStats();
+  addSys("【"+C.title+"】"+C.brief);
+}
+
+function renderTabs(){
+  const box=$("tabs"); box.innerHTML="";
+  C.roles.forEach(r=>{
+    const b=el("button","tab"+(S.current===r.id?" active":""),r.name);
+    b.onclick=()=>{ S.current=r.id; renderTabs(); renderChat(); updateStats(); };
+    box.appendChild(b);
+  });
+}
+
+function renderClues(){
+  const box=$("clueList"); box.innerHTML="";
+  C.clues.forEach(c=>{
+    const found=S.discovered.includes(c.id);
+    const d=el("div","clue"+(found?" found":""));
+    d.appendChild(el("b",null,c.name));
+    d.appendChild(el("p",null,found?c.text:"尚未搜查。"));
+    const b=el("button",null,found?"已搜查":"搜查（-1 次提问）");
+    b.disabled=found || S.attempts<=0 || S.over;
+    b.onclick=()=>inspect(c.id);
+    d.appendChild(b);
+    if(found){
+      const used=S.presented[S.current].includes(c.id);
+      const eb=el("button","ev",used?"已向"+curName()+"出示":"出示给"+curName()+"（-1 次）");
+      eb.disabled=used || S.attempts<=0 || S.over;
+      eb.onclick=()=>presentEvidence(c.id);
+      d.appendChild(eb);
+    }
+    box.appendChild(d);
+  });
+  $("clueCount").textContent=S.discovered.length+" / 3";
+}
+
+function renderTone(){
+  document.querySelectorAll(".tone").forEach(b=>{
+    b.classList.toggle("active",b.dataset.tone===S.tone);
+    b.onclick=()=>{ if(S.over) return; S.tone=b.dataset.tone; renderTone(); };
+  });
+}
+
+function renderMeters(){
+  const r=S.current;
+  $("pVal").textContent=S.pressure[r];
+  $("tVal").textContent=S.trust[r];
+  $("pBar").style.width=Math.max(0,Math.min(100,S.pressure[r]))+"%";
+  $("tBar").style.width=Math.max(0,Math.min(100,S.trust[r]))+"%";
+  $("curName").textContent=curName();
+  $("btnHint").disabled=S.hintUsed || S.attempts>6 || S.over;
+  $("btnHint").textContent=S.hintUsed?"提示已用":"给个提示（免费一次）";
+}
+
+function curName(){ const r=C.roles.find(x=>x.id===S.current); return r?r.name:"—"; }
+
+function updateStats(){
+  if(!S) return;
+  $("attempts").textContent=S.attempts;
+  $("btnSend").disabled=S.attempts<=0 || S.over;
+  $("ask").disabled=S.attempts<=0 || S.over;
+  renderClues(); renderMeters();
+}
+
+function renderChat(){
+  const log=$("log"); log.innerHTML="";
+  (S.chats[S.current]||[]).forEach(m=>addMsg(m.who,m.text,m.cls,false));
+  log.scrollTop=log.scrollHeight;
+}
+
+function addMsg(who,text,cls,scroll=true){
+  const log=$("log");
+  const d=el("div","msg "+cls);
+  if(who){ d.appendChild(el("span","who",who)); }
+  d.appendChild(document.createTextNode(text));
+  log.appendChild(d);
+  if(scroll) log.scrollTop=log.scrollHeight;
+}
+
+function addSys(text){
+  S.chats[S.current].push({who:"",text,cls:"sys"});
+  addMsg("",text,"sys");
+}
+
+function inspect(id){
+  if(S.attempts<=0||S.over) return;
+  const c=C.clues.find(x=>x.id===id);
+  S.attempts--; S.discovered.push(id);
+  addSys("【现场 · "+c.name+"】"+c.text);
+  updateStats();
+  if(S.attempts<=0) addSys("提问次数用完了。你可以指认凶手。");
+}
+
+/* ===================== 对话 ===================== */
+function offlineReply(r,text){
+  const t=(text||"").toLowerCase();
+  for(const cid of S.discovered){
+    const hit=(cid===C.clues.find(x=>x.id===cid).id) && (
+      (cid==="office"&&/21|电话|通话|玻璃|账/.test(t)) ||
+      (cid==="gallery"&&/画|借条|120|展厅/.test(t)) ||
+      (cid==="backdoor"&&/后门|监控|刷卡|陈叔/.test(t)) ||
+      (cid==="ledger"&&/账|撕|撤资/.test(t)) ||
+      (cid==="desk"&&/登记|监控|前台/.test(t)) ||
+      (cid==="kitchen"&&/厨房|后门|血|食材/.test(t)) ||
+      (cid==="log"&&/日志|撕|手套|血/.test(t)) ||
+      (cid==="engine"&&/机舱|监控|扳手/.test(t)) ||
+      (cid==="deck"&&/甲板|救生衣|栏杆/.test(t))
+    );
+    if(hit) return r.clueReply[cid];
+  }
+  for(const topic of r.topics){
+    if(topic.keys.some(k=>t.includes(k))) return pick(topic.replies);
+  }
+  return pick(r.defaults);
+}
+
+async function aiReply(r,text){
+  const body={model:API.model||"deepseek-chat",messages:[
+    {role:"system",content:r.system+"\n案件背景："+C.brief+"\n当前压力："+S.pressure[r.id]+"/100，信任："+S.trust[r.id]+"/100。玩家语气："+TONE[S.tone]+"。"},
+    {role:"user",content:"侦探问："+text}
+  ],temperature:0.9,max_tokens:180};
+  const res=await fetch(API.url,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+API.key},body:JSON.stringify(body)});
+  if(!res.ok) throw new Error("HTTP "+res.status);
+  const data=await res.json();
+  return (data.choices&&data.choices[0]&&data.choices[0].message.content||"").trim();
+}
+
+function applyTone(r){
+  if(S.tone==="empathy"){ S.trust[r.id]+=8; S.pressure[r.id]-=4; }
+  else if(S.tone==="pressure"){ S.pressure[r.id]+=14; S.trust[r.id]-=8; }
+  else { S.pressure[r.id]+=3; S.trust[r.id]+=2; }
+  S.pressure[r.id]=Math.max(0,Math.min(100,S.pressure[r.id]));
+  S.trust[r.id]=Math.max(0,Math.min(100,S.trust[r.id]));
+}
+
+async function ask(){
+  if(S.attempts<=0||S.over) return;
+  const input=$("ask"); const text=input.value.trim(); if(!text) return;
+  input.value="";
+  const r=C.roles.find(x=>x.id===S.current);
+  S.chats[S.current].push({who:"你",text:"["+TONE[S.tone]+"] "+text,cls:"me"});
+  addMsg("你","["+TONE[S.tone]+"] "+text,"me");
+  S.attempts--; applyTone(r); updateStats();
+
+  const log=$("log");
+  const typing=el("div","typing",r.name+" 正在回答…");
+  log.appendChild(typing); log.scrollTop=log.scrollHeight;
+
+  let reply="";
+  if(API.url&&API.key){ try{ reply=await aiReply(r,text); }catch(e){ toast("AI 接口失败，已切换离线回复"); } }
+  if(!reply){ await new Promise(x=>setTimeout(x,350+Math.random()*450)); reply=offlineReply(r,text); }
+  typing.remove();
+
+  if(S.pressure[r.id]>=70&&!S.slipped[r.id]){ reply+="\n\n"+r.slip; S.slipped[r.id]=true; }
+  else if(S.trust[r.id]>=70&&!S.volunteered[r.id]){ reply+="\n\n"+r.volunteer; S.volunteered[r.id]=true; }
+
+  S.chats[S.current].push({who:r.name,text:reply,cls:"npc"});
+  addMsg(r.name,reply,"npc");
+  renderMeters();
+  if(S.attempts<=0) addSys("提问次数用完了。你可以指认凶手。");
+}
+
+function presentEvidence(cid){
+  if(S.attempts<=0||S.over) return;
+  const r=C.roles.find(x=>x.id===S.current);
+  if(S.presented[r.id].includes(cid)) return;
+  const c=C.clues.find(x=>x.id===cid);
+  S.attempts--; S.presented[r.id].push(cid);
+  S.pressure[r.id]+=30; S.trust[r.id]-=12;
+  S.pressure[r.id]=Math.max(0,Math.min(100,S.pressure[r.id]));
+  S.trust[r.id]=Math.max(0,Math.min(100,S.trust[r.id]));
+
+  addMsg("你","（出示证据： "+c.name+" ）","me");
+  S.chats[S.current].push({who:"你",text:"（出示证据： "+c.name+" ）",cls:"me"});
+  let reply=r.clueReply[cid]||"这和我没关系。";
+  if(S.pressure[r.id]>=70&&!S.slipped[r.id]){ reply+="\n\n"+r.slip; S.slipped[r.id]=true; }
+  S.chats[S.current].push({who:r.name,text:reply,cls:"npc"});
+  addMsg(r.name,reply,"npc");
+  updateStats();
+  if(S.attempts<=0) addSys("提问次数用完了。你可以指认凶手。");
+}
+
+function hint(){
+  if(S.hintUsed||S.attempts>6||S.over) return;
+  S.hintUsed=true;
+  const r=C.roles.find(x=>x.id===S.current);
+  addSys("提示：先搜查「"+C.keyClueName+"」，它指向本案的关键人物；再用「施压」或直接出示证据，逼对方改口。");
+  renderMeters();
+}
+
+/* ===================== 结案 ===================== */
+function openAccuse(){
+  if(S.over) return;
+  const sp=$("accuseSuspects"); sp.innerHTML="";
+  C.roles.forEach((r,i)=>{
+    const lab=el("label");
+    const ip=document.createElement("input"); ip.type="radio"; ip.name="accuse"; ip.value=r.id; if(i===0)ip.checked=true;
+    lab.appendChild(ip); lab.appendChild(document.createTextNode(r.name+"（"+r.role+"）"));
+    sp.appendChild(lab);
+  });
+  const cp=$("accuseClues"); cp.innerHTML="";
+  C.clues.forEach(c=>{
+    const found=S.discovered.includes(c.id);
+    const lab=el("label");
+    const cb=document.createElement("input"); cb.type="checkbox"; cb.name="ev"; cb.value=c.id; cb.disabled=!found;
+    lab.appendChild(cb); lab.appendChild(document.createTextNode(c.name+(found?"":"（未搜查）")));
+    cp.appendChild(lab);
+  });
+  $("accuseDlg").showModal();
+}
+
+function confirmAccuse(){
+  const sus=document.querySelector('input[name="accuse"]:checked');
+  const evs=[...document.querySelectorAll('input[name="ev"]:checked')].map(x=>x.value);
+  if(!sus){ toast("请选择凶手"); return; }
+  if(evs.length<2){ toast("请至少选择 2 条关键证据"); return; }
+  const r=C.roles.find(x=>x.id===sus.value);
+  const killer=C.roles.find(x=>x.guilty);
+  const win=r.guilty && evs.includes(C.keyClue);
+  S.over=true;
+  $("accuseDlg").close();
+  $("game").hidden=true; $("end").hidden=false;
+
+  if(win){
+    $("endTitle").textContent="真相大白";
+    $("endText").textContent =
+      "你指认"+killer.name+"，并出示了："+evs.map(id=>C.clues.find(c=>c.id===id).name).join("、")+"。\n\n"+
+      C.ending+"\n\n"+
+      "关键证据： "+C.keyClueName+"。\n\n"+
+      "【复盘】你赢在：先拿关键线索，再用证据和压力让对方改口。";
+  }else{
+    $("endTitle").textContent="真相仍在雨里";
+    $("endText").textContent =
+      "你指认了"+r.name+"，并出示了："+evs.map(id=>C.clues.find(c=>c.id===id).name).join("、")+"。\n\n"+
+      (r.guilty?"方向对了，但证据链不够硬——对方矢口否认。\n\n":"他不是凶手。真正的凶手在雨里离开了。\n\n")+
+      "【真相】凶手是 "+killer.name+"（"+killer.role+"）。\n\n"+C.ending+"\n\n"+
+      "关键证据： "+C.keyClueName+"。\n\n"+
+      "【复盘】下次先拿关键线索，再指认；只指认对、证据不够，也算失败。";
+  }
+}
+
+/* ===================== 事件 ===================== */
+$("btnStart").onclick=startGame;
+$("btnReplay").onclick=startGame;
+$("btnHome").onclick=()=>{ $("end").hidden=true; $("start").hidden=false; };
+$("btnSend").onclick=ask;
+$("ask").addEventListener("keydown",e=>{ if(e.key==="Enter") ask(); });
+$("btnAccuse").onclick=openAccuse;
+$("btnHint").onclick=hint;
+$("btnCancelAccuse").onclick=()=>$("accuseDlg").close();
+$("btnConfirmAccuse").onclick=confirmAccuse;
+
+const dlg=$("dlg");
+function openSettings(){
+  $("apiUrl").value=API.url||""; $("apiKey").value=API.key||""; $("apiModel").value=API.model||"";
+  dlg.showModal();
+}
+$("btnSettings").onclick=openSettings;
+$("btnSettings2").onclick=openSettings;
+$("btnSaveApi").onclick=()=>{
+  API={url:$("apiUrl").value.trim(),key:$("apiKey").value.trim(),model:$("apiModel").value.trim()};
+  sessionStorage.setItem("ai_interro_api",JSON.stringify(API));
+  $("modeBadge").textContent=(API.url&&API.key)?"AI 实时模式":"离线演示模式";
+  dlg.close(); toast(API.url&&API.key?"已启用 AI 实时对话":"已保存，当前为离线模式");
+};
+$("btnClearApi").onclick=()=>{
+  API={url:"",key:"",model:""};
+  sessionStorage.removeItem("ai_interro_api");
+  $("modeBadge").textContent="离线演示模式";
+  dlg.close(); toast("已清除 AI 配置");
+};
+
+/* init */
+renderStart();
+$("modeBadge").textContent=(API.url&&API.key)?"AI 实时模式":"离线演示模式";
+</script>
+</body>
+</html>
